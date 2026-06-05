@@ -1,79 +1,60 @@
 import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import provinceService from '../services/province-service.js';
-import { validateId, validateProvince } from '../helpers/validaciones-helper.js';
 
 const ProvinceRouter = Router();
 
+// Lista completa — nunca falla si la DB está arriba
 ProvinceRouter.get('/', async (req, res) => {
   try {
-    const provinces = await provinceService.getAll();
+    const provinces = await provinceService.getAllAsync();
     res.status(StatusCodes.OK).json(provinces);
   } catch (error) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
   }
 });
 
+// Busca por id — el service ya lanza si no existe
 ProvinceRouter.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!validateId(id)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'ID inválido' });
-    }
-    const province = await provinceService.getById(id);
-    if (!province) {
-      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Provincia no encontrada' });
-    }
+    const province = await provinceService.getByIdAsync(req.params.id);
     res.status(StatusCodes.OK).json(province);
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
+    res.status(StatusCodes.NOT_FOUND).json({ message: error.message });
   }
 });
 
+// Crea y devuelve 201 con la fila completa; 400 si no pasa validación
 ProvinceRouter.post('/', async (req, res) => {
   try {
-    if (!validateProvince(req.body)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Datos inválidos' });
-    }
-    const province = await provinceService.create(req.body);
+    const province = await provinceService.createAsync(req.body);
     res.status(StatusCodes.CREATED).json(province);
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
+    res.status(StatusCodes.BAD_REQUEST).json({ message: error.message });
   }
 });
 
-ProvinceRouter.put('/:id', async (req, res) => {
+// El id va en el body, no en la URL 
+ProvinceRouter.put('/', async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!validateId(id)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'ID inválido' });
-    }
-    if (!validateProvince(req.body)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'Datos inválidos' });
-    }
-    const province = await provinceService.update(id, req.body);
-    if (!province) {
-      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Provincia no encontrada' });
-    }
-    res.status(StatusCodes.OK).json(province);
+    const province = await provinceService.updateAsync(req.body);
+    res.status(StatusCodes.CREATED).json(province);
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
+    // El service usa el mismo tipo de error para validación y not found — distinguimos por mensaje
+    const isNotFound = error.message.includes('no encontrada');
+    res
+      .status(isNotFound ? StatusCodes.NOT_FOUND : StatusCodes.BAD_REQUEST)
+      .json({ message: error.message });
   }
 });
 
+// Borra y retorna la fila eliminada; 404 si el id no existía
 ProvinceRouter.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!validateId(id)) {
-      return res.status(StatusCodes.BAD_REQUEST).json({ message: 'ID inválido' });
-    }
-    const province = await provinceService.remove(id);
-    if (!province) {
-      return res.status(StatusCodes.NOT_FOUND).json({ message: 'Provincia no encontrada' });
-    }
-    res.status(StatusCodes.OK).json({ message: 'Provincia eliminada', province });
+    const deleted = await provinceService.deleteByIdAsync(req.params.id);
+    res.status(StatusCodes.OK).json(deleted);
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: error.message });
+    res.status(StatusCodes.NOT_FOUND).json({ message: error.message });
   }
 });
 

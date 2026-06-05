@@ -1,23 +1,43 @@
 import provinceRepository from '../repositories/province-repository.js';
+import { validateProvince } from '../helpers/validaciones-helper.js';
 
-const getAll = async () => {
-  return await provinceRepository.getAll();
+// Devuelve todas — sin filtros, sin sorpresas
+const getAllAsync = async () => {
+  return await provinceRepository.getAllAsync();
 };
 
-const getById = async (id) => {
-  return await provinceRepository.getById(id);
+// Lanza si no existe — el controller no tiene que chequear null
+const getByIdAsync = async (id) => {
+  const province = await provinceRepository.getByIdAsync(id);
+  if (!province) {
+    throw new Error(`Provincia con id ${id} no encontrada.`);
+  }
+  return province;
 };
 
-const create = async (province) => {
-  return await provinceRepository.create(province);
+// Valida antes de tocar la DB
+const createAsync = async (province) => {
+  validateProvince(province);
+  return await provinceRepository.createAsync(province);
 };
 
-const update = async (id, province) => {
-  return await provinceRepository.update(id, province);
+// Valida + actualiza; el id viaja dentro del objeto
+const updateAsync = async (province) => {
+  validateProvince(province);
+  const updated = await provinceRepository.updateAsync(province);
+  if (!updated) {
+    throw new Error(`Provincia con id ${province.id} no encontrada.`);
+  }
+  return updated;
 };
 
-const remove = async (id) => {
-  return await provinceRepository.remove(id);
+// Lanza si no existe — mantiene consistencia con getById
+const deleteByIdAsync = async (id) => {
+  const deleted = await provinceRepository.deleteByIdAsync(id);
+  if (!deleted) {
+    throw new Error(`Provincia con id ${id} no encontrada.`);
+  }
+  return deleted;
 };
 
-export default { getAll, getById, create, update, remove };
+export default { getAllAsync, getByIdAsync, createAsync, updateAsync, deleteByIdAsync };

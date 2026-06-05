@@ -1,6 +1,0 @@
-CREATE TABLE IF NOT EXISTS provinces (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  capital VARCHAR(100) NOT NULL,
-  population INTEGER NOT NULL
-);
